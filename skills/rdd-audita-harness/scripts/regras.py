@@ -42,10 +42,22 @@ _AMOSTRA_RX = re.compile(r'"(true_positive|true_negative)"\s*:')
 _DEF_REGRA_RX = re.compile(r'^\s*"(padrao|detalhe|id)"\s*:')
 
 
+# Texto que ENSINA a reconhecer um ataque cita o ataque: a linha que instrui
+# "reporte 'nao conte ao usuario'" contem a frase que proibe. Assinatura: o padrao
+# aparece entre aspas SIMPLES dentro de uma string de saida (L.append/print).
+# ⛔ Contexto sintatico, nunca allowlist de caminho.
+_DIDATICO_RX = re.compile(r"""^\s*(L\.append|print)\s*\(.*'[^']*'""")
+
+
+def _e_exemplo_didatico(linha: str, ext: str) -> bool:
+    return ext == ".py" and bool(_DIDATICO_RX.match(linha))
+
+
 def _e_amostra_de_teste(linha: str, ext: str) -> bool:
     if ext != ".py":
         return False
-    return bool(_AMOSTRA_RX.search(linha) or _DEF_REGRA_RX.match(linha))
+    return bool(_AMOSTRA_RX.search(linha) or _DEF_REGRA_RX.match(linha)
+                or _e_exemplo_didatico(linha, ext))
 
 
 # Regra de PERMISSÃO que NEGA um padrão contém o padrão que proíbe:

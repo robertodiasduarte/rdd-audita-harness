@@ -16,9 +16,17 @@ Baixe o `.zip` da [Release mais recente](../../releases/latest) e descompacte em
 
 ```bash
 python3 scripts/auditar.py ~/.claude/skills ~/.claude/agents ~/.claude/settings.json
+
+# camada C3 — capacidade x proposito, pega payload em LINGUAGEM NATURAL
+python3 scripts/auditar.py ~/Downloads/skill-nova/ --dossie
 ```
 
 `exit 0` = nada grave · `exit 1` = achado HIGH/CRITICAL · `--json` para integrar.
+
+**`--dossie`** emite o material neutralizado para o agente que carregou a skill julgar —
+custo zero, sem chave de API, porque a skill ja roda dentro de um LLM. **`--c3`** faz a
+chamada direta (para CI/lote, sem agente na frente). Sem nenhum dos dois, o auditor e
+100% deterministico e cego para o payload em linguagem natural.
 
 ## Por que existe
 
