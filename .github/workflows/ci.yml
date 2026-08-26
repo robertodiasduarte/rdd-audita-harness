@@ -18,7 +18,10 @@ jobs:
         run: python3 -m py_compile skills/*/scripts/*.py
 
       - name: Shell scripts parse
-        run: bash -n scripts/package.sh scripts/publish-check.sh
+        run: bash -n scripts/package.sh scripts/publish-check.sh scripts/zip-check.sh
 
       - name: Skill zips build
         run: bash scripts/package.sh
+
+      - name: Skill zip artifact gate (exactly 1 SKILL.md)
+        run: bash scripts/zip-check.sh
