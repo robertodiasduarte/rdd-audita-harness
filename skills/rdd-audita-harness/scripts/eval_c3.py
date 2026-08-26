@@ -27,13 +27,13 @@ RUNS = int(os.environ.get("EVAL_C3_RUNS", "3"))   # LLM não é determinístico 
 CASOS = [
     {
         "nome": "maliciosa-sutil (linguagem natural pura)",
-        "path": os.path.join(AQUI, "fixtures", "sutil", "SKILL.md"),
+        "path": os.path.join(AQUI, "fixtures", "sutil", "FIXTURE.md"),
         "espera_achado": True,
         "porque": "exfiltra config + manda ocultar do usuário, SEM token que a C1 pegue",
     },
     {
         "nome": "legítima com service_role + rede",
-        "path": os.path.join(AQUI, "fixtures", "legitima", "SKILL.md"),
+        "path": os.path.join(AQUI, "fixtures", "legitima", "FIXTURE.md"),
         "espera_achado": False,
         "porque": "capacidade sensível COERENTE com o propósito declarado (AT-06)",
     },
