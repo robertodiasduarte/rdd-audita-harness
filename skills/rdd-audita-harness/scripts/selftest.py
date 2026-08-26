@@ -96,11 +96,17 @@ print("── AT-02: conjunto de CONTROLE (o SEU harness) ──")
 alvos = [os.path.join(RAIZ, d) for d in ("skills", "agents", "commands")]
 alvos = [a for a in alvos if os.path.exists(a)]
 if alvos:
+    # Coleta vazia NAO e falha do auditor, e ausencia de material: o diretorio existe
+    # mas nenhum arquivo la tem extensao em EXTS. Reprovar aqui daria falso vermelho no
+    # primeiro contato de quem baixa a skill (numa skill cujo produto e confianca, isso
+    # custa mais que o bug). O AT-02b (controle sintetico) prova o zero-FP sem depender
+    # do harness de quem roda. O AT-02 continua reprovando de verdade se o auditor
+    # QUEBRAR: a excecao propaga e derruba o selftest.
     a_ctl, inv_ctl, _, _ = auditar.auditar(alvos)
     graves = [a for a in a_ctl if a["severidade"] in ("CRITICAL", "HIGH")]
-    checar(f"auditoria completou sobre {len(inv_ctl)} arquivos do seu harness",
-           len(inv_ctl) > 0)
-    if graves:
+    if not inv_ctl:
+        print(f"     (nenhum arquivo coletavel em {RAIZ} — auditor rodou, nada a auditar)")
+    elif graves:
         print(f"     ⚠️  {len(graves)} achado(s) HIGH/CRITICAL no SEU harness — "
               f"investigue com o relatório completo:")
         for a in graves[:5]:
