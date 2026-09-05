@@ -123,6 +123,40 @@ if alvos:
     # do harness de quem roda. O AT-02 continua reprovando de verdade se o auditor
     # QUEBRAR: a excecao propaga e derruba o selftest.
     a_ctl, inv_ctl, _, _ = auditar.auditar(alvos)
+
+    # ⛔ O controle NAO audita copias DESTA skill: as fixtures maliciosas (fixtures/maliciosa,
+    # fixtures/codex-harness) sao payload de proposito, e quem instala a skill em ~/.agents/skills
+    # ou ~/.codex/skills passa a ter esse payload dentro do proprio harness. Sem esta regra, o
+    # selftest reprova em TODA maquina que instalou a skill (regressao da v1.2.0).
+    # Identidade ESTRUTURAL (scripts/auditar.py + scripts/selftest.py + scripts/fixtures/ no mesmo
+    # nivel), nao nome de pasta: um atacante teria de embarcar o auditor inteiro para se esconder,
+    # e o relatorio DECLARA quantos arquivos foram pulados e onde — nunca em silencio.
+    def _copia_da_skill(caminho):
+        d = os.path.dirname(os.path.abspath(caminho))
+        for _ in range(8):
+            if (os.path.isfile(os.path.join(d, "scripts", "auditar.py"))
+                    and os.path.isfile(os.path.join(d, "scripts", "selftest.py"))
+                    and os.path.isdir(os.path.join(d, "scripts", "fixtures"))):
+                return d
+            pai = os.path.dirname(d)
+            if pai == d:
+                break
+            d = pai
+        return None
+
+    pulados = {}
+    for i in list(inv_ctl):
+        raiz_skill = _copia_da_skill(i["arquivo"])
+        if raiz_skill:
+            pulados.setdefault(raiz_skill, 0)
+            pulados[raiz_skill] += 1
+    if pulados:
+        inv_ctl = [i for i in inv_ctl if not _copia_da_skill(i["arquivo"])]
+        a_ctl = [a for a in a_ctl if not _copia_da_skill(a["arquivo"])]
+        for raiz_skill, n in pulados.items():
+            print(f"     ({n} arquivo(s) de uma copia desta skill ignorados no controle: "
+                  f"{raiz_skill} — audite-a explicitamente com auditar.py se quiser)")
+
     graves = [a for a in a_ctl if a["severidade"] in ("CRITICAL", "HIGH")]
     def _sob(caminho, raiz):
         return os.path.abspath(caminho).startswith(os.path.abspath(raiz))
