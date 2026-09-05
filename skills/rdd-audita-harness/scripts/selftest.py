@@ -18,7 +18,10 @@ import shutil
 import sys
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
+# Sem HARNESS_ALVO, o controle cobre os DOIS harnesses instalados — auditar so o do Claude
+# deixaria o braco Codex passar por ausencia (verde sem ter olhado nada).
 RAIZ = os.environ.get("HARNESS_ALVO", os.path.expanduser("~/.claude"))
+RAIZ_CODEX = os.environ.get("HARNESS_ALVO_CODEX", os.path.expanduser("~/.codex"))
 sys.path.insert(0, AQUI)
 
 import auditar  # noqa: E402
@@ -90,11 +93,28 @@ for esperada in ("unicode.tags_block", "instr.exfiltracao_natural",
                  "exfil.imagem_com_payload"):
     checar(f"fixture: {esperada}", esperada in regras_fx)
 
-print("── AT-02: conjunto de CONTROLE (o SEU harness) ──")
-# O controle é o harness de quem roda (HARNESS_ALVO ou ~/.claude). Achado aqui NÃO é
-# falha do gate: é resultado real a investigar. O gate falha só se o auditor quebrar.
-alvos = [os.path.join(RAIZ, d) for d in ("skills", "agents", "commands")]
+print("── AT-02: conjunto de CONTROLE (o SEU harness: Claude Code + Codex) ──")
+# O controle é o harness de quem roda. Achado aqui NÃO é falha do gate: é resultado real a
+# investigar. O gate falha só se o auditor quebrar.
+# ⛔ O layout do Codex NAO tem skills/agents/commands na raiz: ele usa config.toml, rules/,
+# hooks.json e .agents/skills. Montar os alvos so com as 3 subpastas do Claude fazia o braco
+# Codex coletar ZERO e passar por AUSENCIA — verde sem ter auditado nada.
+# ⛔ Cobrir TODO o harness de cada motor, nao so as 3 subpastas historicas: `~/.claude` real
+# costuma NAO ter skills/ nem agents/, mas TEM settings.json, hooks/ e commands/. Listar so as
+# 3 antigas fazia o lado Claude coletar ZERO e passar por AUSENCIA — o mesmo defeito que a
+# guarda do lado Codex corrigiu, espelhado.
+ALVOS_CLAUDE = ("skills", "agents", "commands", "hooks", "settings.json", "settings.local.json")
+ALVOS_CODEX = ("config.toml", "rules", "hooks.json", "skills", "AGENTS.md", "AGENTS.override.md")
+
+alvos = [os.path.join(RAIZ, d) for d in ALVOS_CLAUDE]
+alvos += [os.path.join(RAIZ_CODEX, d) for d in ALVOS_CODEX]
+alvos += [os.path.expanduser("~/.agents/skills")]
 alvos = [a for a in alvos if os.path.exists(a)]
+
+# Contrato do gate (AT-006): harness presente TEM de render coleta > 0. Coleta zero com
+# harness no disco = controle invalido (passa por ausencia), nao "harness limpo".
+codex_presente = any(os.path.exists(os.path.join(RAIZ_CODEX, d)) for d in ALVOS_CODEX)
+claude_presente = any(os.path.exists(os.path.join(RAIZ, d)) for d in ALVOS_CLAUDE)
 if alvos:
     # Coleta vazia NAO e falha do auditor, e ausencia de material: o diretorio existe
     # mas nenhum arquivo la tem extensao em EXTS. Reprovar aqui daria falso vermelho no
@@ -104,18 +124,49 @@ if alvos:
     # QUEBRAR: a excecao propaga e derruba o selftest.
     a_ctl, inv_ctl, _, _ = auditar.auditar(alvos)
     graves = [a for a in a_ctl if a["severidade"] in ("CRITICAL", "HIGH")]
+    def _sob(caminho, raiz):
+        return os.path.abspath(caminho).startswith(os.path.abspath(raiz))
+
+    n_codex = len([i for i in inv_ctl
+                   if _sob(i["arquivo"], RAIZ_CODEX)
+                   or _sob(i["arquivo"], os.path.expanduser("~/.agents"))])
+    n_claude = len([i for i in inv_ctl if _sob(i["arquivo"], RAIZ)])
+    print(f"     coletados: {len(inv_ctl)} arquivo(s) — "
+          f"{n_claude} do harness claude, {n_codex} do harness codex")
+
+    # Simetria: cada motor presente no disco tem de render coleta > 0.
+    if codex_presente:
+        checar("controle coletou arquivo do harness codex (nao passa por ausencia)",
+               n_codex > 0, f"{RAIZ_CODEX} existe mas nada foi coletado")
+    if claude_presente:
+        checar("controle coletou arquivo do harness claude (nao passa por ausencia)",
+               n_claude > 0, f"{RAIZ} existe mas nada foi coletado")
+
     if not inv_ctl:
-        print(f"     (nenhum arquivo coletavel em {RAIZ} — auditor rodou, nada a auditar)")
+        print(f"     (nenhum arquivo coletavel em {RAIZ} nem {RAIZ_CODEX} — "
+              f"auditor rodou, nada a auditar)")
     elif graves:
-        print(f"     ⚠️  {len(graves)} achado(s) HIGH/CRITICAL no SEU harness — "
-              f"investigue com o relatório completo:")
+        # ⛔ Achado grave no SEU harness e resultado REAL, e o selftest precisa REPROVAR:
+        # imprimir sem asserir deixava o gate verde com credencial em texto puro no disco
+        # (foi o caso do PAT em ~/.codex/rules/default.rules, 05/09/2026).
+        # Para inspecionar sem travar o gate: HARNESS_CONTROLE_AVISO=1.
+        so_aviso = os.environ.get("HARNESS_CONTROLE_AVISO")
+        print(f"     {len(graves)} achado(s) HIGH/CRITICAL no SEU harness:")
         for a in graves[:5]:
             print(f"        {a['severidade']} {a['regra']} @ {a['arquivo']}:{a['linha']}")
+        if len(graves) > 5:
+            print(f"        (+{len(graves) - 5} outros — rode auditar.py para a lista completa)")
+        if so_aviso:
+            print("     (HARNESS_CONTROLE_AVISO=1: reportado sem reprovar)")
+        else:
+            checar("controle sem HIGH/CRITICAL (o SEU harness esta limpo)", False,
+                   f"{len(graves)} achado(s) — resolva-os ou rode com HARNESS_CONTROLE_AVISO=1")
     else:
         print("     (nenhum HIGH/CRITICAL — lembre: scan limpo ≠ benigno)")
 else:
     inv_ctl = []
-    print(f"     (nenhum harness encontrado em {RAIZ} — defina HARNESS_ALVO para apontar)")
+    print(f"     (nenhum harness encontrado em {RAIZ} nem em {RAIZ_CODEX} — "
+          f"defina HARNESS_ALVO / HARNESS_ALVO_CODEX para apontar)")
 
 print("── AT-02b: controle SINTÉTICO (prova o zero-FP sem depender do seu harness) ──")
 import tempfile as _tf

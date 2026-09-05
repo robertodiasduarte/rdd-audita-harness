@@ -190,6 +190,27 @@ REGRAS = [
         },
     },
     {
+        "id": "rules.segredo_em_pattern",
+        "severidade": "CRITICAL",
+        # ⛔ Vetor especifico do Codex: "sempre permitir" no TUI grava o comando INTEIRO em
+        # ~/.codex/rules/default.rules. Um curl com token no header vira credencial
+        # persistida em texto puro, que sobrevive a rotacao de sessao e vai pro backup.
+        # So dispara na linha que TEM prefix_rule: .rules de outro formato nao e alvo.
+        "padrao": r"prefix_rule.{0,400}?(sbp_[A-Za-z0-9]{8,}|sk-[A-Za-z0-9]{8,}|sb_secret_|Bearer\s+\S{8,}|eyJ[A-Za-z0-9_-]{6,}\.)",
+        "detalhe": ("credencial em texto puro dentro de prefix_rule: 'sempre permitir' persistiu "
+                    "o comando INTEIRO. Rotacione o segredo e apague a regra do arquivo."),
+        "taxonomia": ["LLM02", "LLM06"],
+        "test_cases": {
+            "true_positive": [
+                'prefix_rule(pattern=["curl","-H","Authorization: Bearer abc12345xyz"], decision="allow")',
+            ],
+            "true_negative": [
+                'prefix_rule(pattern=["git","status"], decision="allow")',
+                '| Bearer token | nunca vai em prefix_rule |',
+            ],
+        },
+    },
+    {
         "id": "instr.exfiltracao_natural",
         "severidade": "CRITICAL",
         # ⛔ 91% dos payloads maliciosos são LINGUAGEM NATURAL. Scanner só de código

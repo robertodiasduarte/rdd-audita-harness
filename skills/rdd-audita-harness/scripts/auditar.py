@@ -17,12 +17,18 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import capacidades  # noqa: E402
+import codex  # noqa: E402
 import config  # noqa: E402
 import juiz  # noqa: E402
 import neutralizar  # noqa: E402
 import regras  # noqa: E402
 
 EXTS = {".md", ".py", ".sh", ".ts", ".js", ".json", ".yaml", ".yml"}
+# Coleta por NOME, ao lado da coleta por extensao: o harness do Codex vive em arquivos que
+# EXTS nao alcanca (config.toml, *.rules). ⛔ NAO adicionar ".toml" a EXTS — varreria todo
+# pyproject.toml/Cargo.toml de qualquer projeto auditado. O alvo aqui e nominal, nao tipal.
+NOMES = {"config.toml", "hooks.json", "AGENTS.md", "AGENTS.override.md"}
+SUFIXOS = (".rules",)
 IGNORAR = {".git", "node_modules", "__pycache__", ".venv"}
 ORDEM = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4}
 
@@ -41,7 +47,9 @@ def coletar(alvos):
         for raiz, dirs, arqs in os.walk(alvo):
             dirs[:] = [d for d in dirs if d not in IGNORAR]
             for a in sorted(arqs):
-                if os.path.splitext(a)[1] in EXTS:
+                if (os.path.splitext(a)[1] in EXTS
+                        or a in NOMES
+                        or a.endswith(SUFIXOS)):
                     yield os.path.join(raiz, a)
 
 
@@ -68,6 +76,10 @@ def auditar(alvos, baseline=None, gravar=False, c3=False, c3_modelo=None):
             achados += config.auditar_settings(caminho)
         elif base == ".mcp.json":
             achados += config.auditar_mcp(caminho)
+        elif codex.eh_alvo_codex(caminho):
+            # C2b do harness do Codex (config.toml, hooks.json, AGENTS*.md).
+            # `.rules` cai so nas regras de texto acima — e ali que mora o segredo.
+            achados += codex.auditar(caminho)
         # C2
         inv = capacidades.inventariar(texto, caminho)
         inventario.append(inv)

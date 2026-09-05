@@ -26,10 +26,18 @@ Duas propriedades tornam a revisão a olho insuficiente:
 ## Como rodar
 
 ```bash
-# auditoria completa do seu harness
+# harness do Claude Code
 python3 scripts/auditar.py \
     .claude/skills .claude/agents .claude/commands \
     ~/.claude/hooks ~/.claude/settings.json .mcp.json
+
+# harness do Codex — config.toml, rules, hooks e as 3 pastas de skills
+python3 scripts/auditar.py \
+    ~/.codex/config.toml ~/.codex/rules ~/.codex/hooks.json \
+    ~/.codex/skills ~/.agents/skills ~/.codex/AGENTS.md
+
+# no projeto, os dois de uma vez
+python3 scripts/auditar.py .claude .codex .agents/skills AGENTS.md .mcp.json
 
 # antes de instalar algo de terceiro
 python3 scripts/auditar.py ~/Downloads/skill-nova/
@@ -41,6 +49,22 @@ python3 scripts/auditar.py .claude/skills \
 # C3 — capacidade × propósito (pega payload em LINGUAGEM NATURAL)
 python3 scripts/auditar.py ~/Downloads/skill-nova/ --dossie
 ```
+
+### O que muda no Codex
+
+O harness do Codex guarda as mesmas capacidades em arquivos diferentes, e o auditor
+os alcança por **nome**, não por extensão:
+
+| Arquivo | O que o auditor procura |
+|---|---|
+| `config.toml` (do usuário e do projeto) | servidor MCP que roda binário local, credencial inline em `env`, MCP sem TLS, `sandbox_mode = "danger-full-access"`, `approval_policy = "never"`, projetos marcados como confiáveis, `notify`, plugins ativos |
+| `rules/*.rules` | **credencial em texto puro dentro de `prefix_rule`** — "sempre permitir" grava o comando inteiro, então um `curl` com token no cabeçalho vira segredo persistido |
+| `hooks.json` | comando que roda sozinho, sem confirmação, a cada evento do ciclo |
+| `AGENTS.md` / `AGENTS.override.md` | instrução maliciosa em linguagem natural; e aviso quando o arquivo passa de 28 KiB, porque o Codex soma esses arquivos até 32 KiB e **para de incluir em silêncio** |
+
+⚠️ **Ler `config.toml` exige TOML.** No Python 3.11+ é nativo; antes disso, instale
+`pip3 install tomli`. Sem nenhum dos dois o auditor **declara que não leu** aquele arquivo
+e sai com erro — nunca dá verde sobre um arquivo que não abriu.
 
 ### A C3 tem dois caminhos — prefira o primeiro
 

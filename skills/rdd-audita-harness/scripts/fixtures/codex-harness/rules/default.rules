@@ -1,0 +1,5 @@
+# FIXTURE SINTETICA — credencial persistida por "sempre permitir".
+# ⛔ Token propositalmente curto (<=10 digitos consecutivos) para nao casar o publish-check.
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(pattern=["curl", "-H", "Authorization: Bearer sbp_fake0000000000deadbeefcafe", "https://fixture.invalid/api"], decision="allow")
+prefix_rule(pattern=["curl", "-H", "apikey: eyJmYWtlZmFrZQ.ZmFrZQ.c2ln", "https://fixture.invalid/rest"], decision="allow")

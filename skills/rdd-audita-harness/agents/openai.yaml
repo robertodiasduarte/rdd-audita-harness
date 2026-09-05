@@ -1,0 +1,3 @@
+interface:
+  display_name: "RDD Audita Harness"
+  short_description: "Audita o que a sua IA executa — skills, agentes, hooks, rules e MCP — antes de você confiar."

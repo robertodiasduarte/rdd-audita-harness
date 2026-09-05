@@ -9,17 +9,33 @@ instalar ou confiar.
 
 ## Instalar
 
-Baixe o `.zip` da [Release mais recente](../../releases/latest) e descompacte em
-`~/.claude/skills/` (ou na pasta de skills da sua ferramenta).
+- **Claude Code:** `npx skills add robertodiasduarte/rdd-audita-harness -a claude-code -y` (instala em `.claude/skills/` do projeto; com `-g`, em `~/.claude/skills/`).
+- **Codex:** `npx skills add robertodiasduarte/rdd-audita-harness -a codex -y` (instala em `.agents/skills/` do projeto; com `-g`, em `~/.codex/skills/`).
+- **Cursor, Kimi e outros:** mesmo comando com o nome do agente em `-a`. Sem Node.js, descompacte o `.zip` e copie a pasta `rdd-audita-harness/` para o diretório de skills do seu agente.
+
+O `.zip` da [Release mais recente](../../releases/latest) continua disponível para instalar
+no claude.ai e no ChatGPT, sem descompactar.
 
 ## Usar
 
 ```bash
-python3 scripts/auditar.py ~/.claude/skills ~/.claude/agents ~/.claude/settings.json
+# harness do Claude Code
+python3 scripts/auditar.py ~/.claude/skills ~/.claude/agents ~/.claude/settings.json ~/.claude/hooks
+
+# harness do Codex — config.toml, rules, hooks e as 3 pastas de skills
+python3 scripts/auditar.py ~/.codex/config.toml ~/.codex/rules ~/.codex/hooks.json \
+    ~/.codex/skills ~/.agents/skills ~/.codex/AGENTS.md
+
+# no projeto, os dois de uma vez
+python3 scripts/auditar.py .claude .codex .agents/skills AGENTS.md .mcp.json
 
 # camada C3 — capacidade x proposito, pega payload em LINGUAGEM NATURAL
 python3 scripts/auditar.py ~/Downloads/skill-nova/ --dossie
 ```
+
+**Codex precisa ler TOML.** No Python 3.11+ isso é nativo. Em versões anteriores, instale
+`pip3 install tomli` — sem nenhum dos dois o auditor **avisa** que não leu o `config.toml`
+e sai com erro, em vez de dar verde sobre um arquivo que não abriu.
 
 `exit 0` = nada grave · `exit 1` = achado HIGH/CRITICAL · `--json` para integrar.
 
