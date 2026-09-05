@@ -10,7 +10,7 @@ instalar ou confiar.
 ## Instalar
 
 - **Claude Code:** `npx skills add robertodiasduarte/rdd-audita-harness -a claude-code -y` (instala em `.claude/skills/` do projeto; com `-g`, em `~/.claude/skills/`).
-- **Codex:** `npx skills add robertodiasduarte/rdd-audita-harness -a codex -y` (instala em `.agents/skills/` do projeto; com `-g`, em `~/.codex/skills/`).
+- **Codex:** `npx skills add robertodiasduarte/rdd-audita-harness -a codex -y` (instala em `.agents/skills/` do projeto; com `-g`, em `~/.agents/skills/`, que o Codex também lê).
 - **Cursor, Kimi e outros:** mesmo comando com o nome do agente em `-a`. Sem Node.js, descompacte o `.zip` e copie a pasta `rdd-audita-harness/` para o diretório de skills do seu agente.
 
 O `.zip` da [Release mais recente](../../releases/latest) continua disponível para instalar
