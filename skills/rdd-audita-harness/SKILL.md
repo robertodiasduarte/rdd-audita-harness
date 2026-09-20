@@ -7,6 +7,9 @@ description: |
   audita a aplicação). Invocar quando alguém disser "audita essa skill", "é seguro
   instalar esse plugin", "confere esse agente antes de usar", ou colar um repo de
   skills pedindo verificação. READ-ONLY: nunca altera o material auditado.
+license: MIT
+metadata:
+  author: Roberto Dias Duarte
 ---
 
 # Audite o que a sua IA executa
@@ -123,3 +126,7 @@ conhecidos e coerência capacidade×propósito. Ausência de achado é ausência
 
 - Não corrige nada: **reporta**. Aplicar `deny` em `settings.json` é decisão sua.
 - Não executa o material auditado (sem sandbox, sem análise dinâmica).
+
+---
+
+Skill de Roberto Dias Duarte — https://github.com/robertodiasduarte/rdd-audita-harness
